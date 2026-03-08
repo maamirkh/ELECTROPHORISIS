@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Gel Electrophoresis Lab Simulator</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f0f4f8;--glass:rgba(255,255,255,.72);
+  --blue:#1976d2;--blue2:#1565c0;--blue-light:#e3f2fd;
+  --green:#2e7d32;--green-light:#e8f5e9;
+  --red:#c62828;--purple:#6a1b9a;--orange:#e65100;
+  --text:#1a2030;--text2:#546e7a;--text3:#90a4ae;
+  --shadow:0 8px 32px rgba(0,0,0,.08);--shadow2:0 2px 12px rgba(0,0,0,.06);
+  --radius:16px;--radius2:12px;
+}
+html,body{width:100%;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;overflow-y:auto}
+#app{display:grid;grid-template-columns:280px 1fr 290px;grid-template-rows:auto 1fr;height:100vh;gap:0}
+@media(max-width:1100px){#app{grid-template-columns:240px 1fr 250px}}
+@media(max-width:850px){
+  #app{grid-template-columns:1fr;grid-template-rows:auto auto 50vh auto}
+  .panel-l,.panel-r{max-height:38vh;overflow-y:auto}
+}
+.header{grid-column:1/-1;background:linear-gradient(135deg,#1565c0 0%,#0d47a1 40%,#1a237e 100%);
+  padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:62px;
+  box-shadow:0 4px 20px rgba(13,71,161,.3);z-index:10;flex-wrap:wrap;gap:8px}
+.header .logo{display:flex;align-items:center;gap:12px}
+.header .logo-icon{width:40px;height:40px;background:rgba(255,255,255,.15);border-radius:12px;
+  display:flex;align-items:center;justify-content:center;font-size:1.4rem;backdrop-filter:blur(8px)}
+.header h1{color:#fff;font-size:1.15rem;font-weight:800;letter-spacing:-.3px;line-height:1.2}
+.header h1 small{font-size:.65rem;font-weight:400;opacity:.7;display:block;margin-top:1px}
+.toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+button{font-family:'Inter',sans-serif;cursor:pointer;border:none;border-radius:10px;padding:9px 18px;
+  font-size:.78rem;font-weight:600;transition:all .25s cubic-bezier(.4,0,.2,1);
+  display:inline-flex;align-items:center;gap:6px;letter-spacing:.2px;position:relative;overflow:hidden}
+button::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.15),transparent);pointer-events:none}
+button:active{transform:scale(.96)}
+.btn-run{background:linear-gradient(135deg,#2e7d32,#1b5e20);color:#fff;box-shadow:0 4px 15px rgba(46,125,50,.35)}
+.btn-run:hover{box-shadow:0 6px 20px rgba(46,125,50,.45);transform:translateY(-1px)}
+.btn-stop{background:linear-gradient(135deg,#c62828,#b71c1c);color:#fff}
+.btn-reset{background:rgba(255,255,255,.2);color:#fff;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2)}
+.btn-uv{background:linear-gradient(135deg,#6a1b9a,#4a148c);color:#fff}
+.btn-uv.active{background:linear-gradient(135deg,#aa00ff,#7c4dff);box-shadow:0 4px 20px rgba(170,0,255,.4)}
+.btn-report{background:linear-gradient(135deg,#e65100,#bf360c);color:#fff}
+.btn-sm{padding:7px 14px;font-size:.72rem;border-radius:8px}
+.btn-primary-s{background:linear-gradient(135deg,#1976d2,#1565c0);color:#fff}
+.btn-outline-s{background:var(--glass);color:var(--blue);border:1.5px solid #bbdefb}
+.btn-outline-s:hover{background:var(--blue-light);border-color:var(--blue)}
+.btn-green-s{background:linear-gradient(135deg,#2e7d32,#1b5e20);color:#fff}
+.panel-l,.panel-r{background:var(--glass);backdrop-filter:blur(12px);
+  border-right:1px solid rgba(0,0,0,.06);overflow-y:auto;padding:14px}
+.panel-r{border-right:none;border-left:1px solid rgba(0,0,0,.06)}
+.panel-l::-webkit-scrollbar,.panel-r::-webkit-scrollbar{width:5px}
+.panel-l::-webkit-scrollbar-thumb,.panel-r::-webkit-scrollbar-thumb{background:#c5cae9;border-radius:3px}
+.sec{margin-bottom:16px}
+.sec-head{font-size:.7rem;font-weight:700;color:var(--blue);text-transform:uppercase;
+  letter-spacing:1.2px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.sec-head::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,#bbdefb,transparent)}
+.steps{display:flex;flex-direction:column;gap:3px}
+.step{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:10px;
+  font-size:.74rem;transition:all .3s;background:transparent}
+.step.active{background:var(--blue-light)}
+.step.done{opacity:.5}
+.step-n{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:.68rem;font-weight:800;flex-shrink:0;transition:all .3s;background:#e8eaf6;color:var(--blue)}
+.step.active .step-n{background:var(--blue);color:#fff;box-shadow:0 3px 10px rgba(25,118,210,.3)}
+.step.done .step-n{background:var(--green);color:#fff}
+.step-t{font-weight:500;color:var(--text2)}.step.active .step-t{color:var(--text);font-weight:600}
+.sample{background:#fff;border:2px solid #e8eaf6;border-radius:var(--radius2);padding:9px 11px;
+  margin-bottom:5px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden}
+.sample::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;
+  background:var(--scolor,#1976d2);border-radius:2px 0 0 2px;opacity:.4;transition:opacity .25s}
+.sample:hover{border-color:#90caf9;transform:translateX(3px);box-shadow:var(--shadow2)}
+.sample:hover::before{opacity:1}
+.sample.sel{border-color:var(--blue);background:#e3f2fd;box-shadow:0 0 0 3px rgba(25,118,210,.12)}
+.sample.sel::before{opacity:1}
+.s-name{font-weight:700;font-size:.8rem;display:flex;align-items:center;gap:6px}
+.s-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.s-meta{font-size:.66rem;color:var(--text3);margin-top:1px}
+.s-tags{display:flex;gap:3px;margin-top:4px;flex-wrap:wrap}
+.s-tag{background:#e8eaf6;color:var(--blue2);font-size:.6rem;padding:2px 6px;border-radius:20px;font-weight:600}
+.wells{display:flex;gap:5px;margin:8px 0}
+.well{width:34px;height:34px;border-radius:10px;border:2px solid #cfd8dc;display:flex;align-items:center;
+  justify-content:center;font-size:.68rem;font-weight:700;cursor:pointer;transition:all .25s;
+  background:#eceff1;color:var(--text2);position:relative}
+.well:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:var(--shadow2)}
+.well.act{border-color:var(--blue);box-shadow:0 0 0 3px rgba(25,118,210,.15);background:#e3f2fd;color:var(--blue)}
+.well.filled{border-color:var(--green);background:var(--green-light);color:var(--green)}
+.well.filled::after{content:'';position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;background:var(--green)}
+.speed-row{display:flex;align-items:center;gap:10px;padding:6px 0}
+.speed-row span{font-size:.68rem;color:var(--text3);font-weight:500}
+.speed-row input[type=range]{flex:1;-webkit-appearance:none;height:5px;border-radius:3px;
+  background:linear-gradient(90deg,#bbdefb,#1976d2);outline:none}
+.speed-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;
+  border-radius:50%;background:#fff;border:3px solid var(--blue);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.speed-val{min-width:28px;text-align:center;font-weight:800;color:var(--blue);font-size:.85rem}
+.viewport{position:relative;background:linear-gradient(180deg,#e3e8f0,#d5dce6);overflow:hidden}
+#three-canvas{width:100%!important;height:100%!important;display:block}
+.vp-badge{position:absolute;top:12px;left:12px;background:var(--glass);backdrop-filter:blur(8px);
+  padding:6px 14px;border-radius:20px;font-size:.68rem;font-weight:600;color:var(--text2);
+  border:1px solid rgba(0,0,0,.06);display:flex;align-items:center;gap:6px;z-index:5;transition:all .3s}
+.vp-badge.running{background:rgba(46,125,50,.15);border-color:rgba(46,125,50,.3);color:#1b5e20}
+.vp-badge .dot{width:8px;height:8px;border-radius:50%;background:#aaa;transition:all .3s}
+.vp-badge .dot.on{background:var(--green);box-shadow:0 0 8px rgba(46,125,50,.6);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 8px rgba(46,125,50,.6)}50%{box-shadow:0 0 16px rgba(46,125,50,.9)}}
+.vp-hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
+  background:var(--glass);backdrop-filter:blur(8px);padding:5px 16px;border-radius:20px;
+  font-size:.63rem;color:var(--text3);border:1px solid rgba(0,0,0,.05);z-index:5;white-space:nowrap}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
+.info-card{background:#fff;border-radius:10px;padding:8px;text-align:center;border:1px solid #e8eaf6;transition:all .3s}
+.info-card.active{border-color:var(--green);background:var(--green-light)}
+.info-card .ic-val{font-size:1rem;font-weight:800;color:var(--blue);line-height:1;transition:color .3s}
+.info-card.active .ic-val{color:var(--green)}
+.info-card .ic-lbl{font-size:.6rem;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.5px;margin-top:3px}
+.prog-track{height:6px;background:#e8eaf6;border-radius:3px;overflow:hidden;margin-top:4px}
+.prog-fill{height:100%;background:linear-gradient(90deg,#1976d2,#2e7d32);border-radius:3px;transition:width .3s;width:0%}
+.band-card{background:linear-gradient(135deg,#e3f2fd,#e8eaf6);border:1.5px solid #90caf9;
+  border-radius:var(--radius2);padding:12px;margin-top:8px}
+.band-card h4{font-size:.76rem;color:var(--blue);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.band-row{display:flex;justify-content:space-between;padding:4px 0;font-size:.72rem;border-bottom:1px solid rgba(25,118,210,.08)}
+.band-row:last-child{border:none}
+.band-row .bl{color:var(--text2)}.band-row .bv{font-weight:700;color:var(--blue2)}
+.explain-box{background:#fff;border:1px solid #e8eaf6;border-radius:var(--radius2);padding:11px;
+  font-size:.72rem;line-height:1.7;color:var(--text2)}
+.explain-box h4{color:var(--blue);font-size:.8rem;margin-bottom:5px;font-weight:700}
+.explain-box b{color:var(--text)}
+.quiz-box{background:linear-gradient(135deg,#e8f5e9,#f1f8e9);border:1.5px solid #a5d6a7;
+  border-radius:var(--radius2);padding:12px}
+.quiz-box h4{color:var(--green);font-size:.8rem;margin-bottom:8px;font-weight:700}
+.q-item{margin-bottom:10px}
+.q-label{font-size:.73rem;font-weight:600;color:var(--text);margin-bottom:3px}
+.q-opt{display:block;font-size:.71rem;padding:3px 0;cursor:pointer;color:var(--text2);transition:color .2s}
+.q-opt:hover{color:var(--text)}
+.q-opt input{margin-right:6px;accent-color:var(--green)}
+.quiz-res{margin-top:8px;padding:10px;border-radius:10px;font-weight:700;font-size:.8rem;text-align:center}
+.quiz-res.good{background:#c8e6c9;color:#1b5e20}
+.quiz-res.ok{background:#fff9c4;color:#f57f17}
+.quiz-res.bad{background:#ffcdd2;color:#b71c1c}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);
+  z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;
+  pointer-events:none;transition:opacity .3s}
+.modal-bg.show{opacity:1;pointer-events:all}
+.modal{background:#fff;border-radius:20px;padding:24px;max-width:540px;width:100%;
+  max-height:80vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.2);transform:translateY(20px) scale(.97);
+  transition:transform .35s cubic-bezier(.4,0,.2,1)}
+.modal-bg.show .modal{transform:translateY(0) scale(1)}
+.modal h3{font-size:1.05rem;color:var(--blue);margin-bottom:12px;font-weight:800}
+.modal pre{background:#f5f7fa;padding:14px;border-radius:12px;font-size:.68rem;font-family:'SF Mono',monospace;
+  white-space:pre-wrap;line-height:1.6;max-height:50vh;overflow-y:auto;border:1px solid #e0e0e0;color:var(--text)}
+.modal-btns{display:flex;gap:8px;margin-top:14px}
+.modal-btns button{flex:1}
+.tip{position:absolute;background:#fff;border:2px solid var(--blue);border-radius:12px;
+  padding:10px 14px;font-size:.7rem;box-shadow:0 8px 24px rgba(0,0,0,.12);pointer-events:none;
+  z-index:20;min-width:150px;opacity:0;transform:translateY(5px);transition:all .2s}
+.tip.show{opacity:1;transform:translateY(0)}
+.tip-head{font-weight:700;color:var(--blue);margin-bottom:4px;font-size:.76rem}
+.hidden{display:none!important}
+
+/* ====== BACK BUTTON ====== */
+.back-btn{position:fixed;top:14px;right:14px;z-index:200;background:rgba(255,255,255,.18);
+  color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:24px;padding:7px 18px;
+  font-size:.75rem;font-weight:600;cursor:pointer;backdrop-filter:blur(8px);
+  text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:all .25s}
+.back-btn:hover{background:rgba(255,255,255,.28);transform:translateY(-1px)}
+
+/* ====== THEORY SECTION ====== */
+.theory-section{
+  background:#fff;border:2px solid #c0c8d8;border-radius:16px;
+  padding:32px 36px;box-shadow:0 3px 14px rgba(0,0,0,.08);margin:12px;
+}
+.theory-section h2{
+  font-size:clamp(20px,3vw,28px);font-weight:900;color:#0a1a4a;
+  margin-bottom:8px;letter-spacing:.5px;border-bottom:3px solid #1976d2;
+  padding-bottom:10px;display:inline-block;
+}
+.theory-section h3{
+  font-size:clamp(16px,2.5vw,20px);font-weight:800;color:#1a2a5a;
+  margin-top:24px;margin-bottom:8px;
+}
+.theory-section p{
+  font-size:clamp(14px,1.8vw,16px);line-height:1.8;color:#333;
+  margin-bottom:14px;text-align:justify;
+}
+.theory-section ul{padding-left:24px;margin-bottom:14px;}
+.theory-section ul li{
+  font-size:clamp(14px,1.8vw,16px);line-height:1.8;color:#333;margin-bottom:6px;
+}
+.theory-section .highlight-box{
+  background:linear-gradient(135deg,#f0f8f0,#e8f5e9);border-left:4px solid #2e7d32;
+  border-radius:0 10px 10px 0;padding:16px 20px;margin:16px 0;
+  font-size:15px;color:#1a3a1a;font-weight:600;
+}
+.theory-section .formula-box{
+  background:#0a0c14;border:2px solid rgba(0,200,100,.3);border-radius:12px;
+  padding:20px;text-align:center;margin:20px auto;max-width:520px;
+  font-family:'Courier New',monospace;font-size:clamp(18px,3vw,26px);
+  font-weight:700;color:#00ff88;text-shadow:0 0 20px rgba(0,255,136,.5);letter-spacing:2px;
+}
+.theory-columns{display:flex;gap:24px;margin-top:16px;}
+.theory-col{flex:1;}
+@media(max-width:768px){
+  .theory-section{padding:20px 18px;}
+  .theory-columns{flex-direction:column;gap:0;}
+}
+@media(max-width:480px){
+  .theory-section{padding:16px 14px;border-radius:12px;margin:8px;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">&#129516;</div>
+    <h1>Gel Electrophoresis Simulator<small>Interactive 3D Lab &mdash; DNA &amp; RNA Separation</small></h1>
+  </div>
+  <div class="toolbar">
+    <button class="btn-run" id="btnRun">&#9889; Run Gel</button>
+    <button class="btn-stop btn-sm" id="btnStop">&#9632; Stop</button>
+    <button class="btn-reset btn-sm" id="btnReset">&#8635; Reset</button>
+    <button class="btn-uv btn-sm" id="btnUV">&#128308; UV Light</button>
+    <button class="btn-report btn-sm" id="btnReport">&#128196; Report</button>
+  </div>
+</div>
+<div class="panel-l">
+  <div class="sec">
+    <div class="sec-head">&#128218; Steps</div>
+    <div class="steps" id="stepList">
+      <div class="step active" data-s="0"><div class="step-n">1</div><div class="step-t">Pick a sample</div></div>
+      <div class="step" data-s="1"><div class="step-n">2</div><div class="step-t">Load into well</div></div>
+      <div class="step" data-s="2"><div class="step-n">3</div><div class="step-t">Press <b>Run Gel</b></div></div>
+      <div class="step" data-s="3"><div class="step-n">4</div><div class="step-t">Turn on <b>UV Light</b></div></div>
+      <div class="step" data-s="4"><div class="step-n">5</div><div class="step-t">Click bands to analyze</div></div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-head">&#129514; Samples</div>
+    <div id="sampleList"></div>
+  </div>
+  <div class="sec">
+    <div class="sec-head">&#128300; Wells</div>
+    <div class="wells" id="wellBar"></div>
+    <div style="display:flex;gap:6px;margin-top:6px">
+      <button class="btn-primary-s btn-sm" id="btnLoad" style="flex:1">&#10549; Load</button>
+      <button class="btn-outline-s btn-sm" id="btnClear">&#10005;</button>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-head">&#9201; Speed</div>
+    <div class="speed-row">
+      <span>1x</span>
+      <input type="range" id="speedSlider" min="1" max="10" value="4">
+      <span>10x</span>
+      <div class="speed-val" id="speedVal">4x</div>
+    </div>
+  </div>
+</div>
+<div class="viewport" id="viewport">
+  <canvas id="three-canvas"></canvas>
+  <div class="vp-badge" id="vpBadge"><div class="dot" id="statusDot"></div><span id="statusText">Ready</span></div>
+  <div class="vp-hint">&#128270; Drag to rotate &bull; Scroll to zoom &bull; Click bands for info</div>
+  <div class="tip" id="bandTip"><div class="tip-head">Band Info</div><div id="tipBody"></div></div>
+</div>
+<div class="panel-r">
+  <div class="sec">
+    <div class="sec-head">&#128202; Status</div>
+    <div class="info-grid">
+      <div class="info-card" id="cardVolt"><div class="ic-val" id="vVolt">0 V</div><div class="ic-lbl">Voltage</div></div>
+      <div class="info-card" id="cardCurr"><div class="ic-val" id="vCurr">0 mA</div><div class="ic-lbl">Current</div></div>
+      <div class="info-card" id="cardTime"><div class="ic-val" id="vTime">0:00</div><div class="ic-lbl">Run Time</div></div>
+      <div class="info-card" id="cardProg"><div class="ic-val" id="vProg">0%</div><div class="ic-lbl">Progress</div></div>
+    </div>
+    <div class="prog-track"><div class="prog-fill" id="progBar"></div></div>
+  </div>
+  <div class="sec" id="bandSec" style="display:none">
+    <div class="sec-head">&#128269; Band Details</div>
+    <div class="band-card" id="bandCard"></div>
+  </div>
+  <div class="sec">
+    <div class="sec-head">&#129518; 2D Gel View</div>
+    <canvas id="gel2d" width="260" height="190" style="width:100%;display:block;border-radius:10px;background:#0d1b2a;border:1px solid #1e3a5f"></canvas>
+    <div style="font-size:.6rem;color:var(--text3);margin-top:4px;text-align:center">&#9651; Wells (top) &rarr; Bands migrate down &darr;</div>
+  </div>
+  <div class="sec">
+    <div class="sec-head">&#128218; About</div>
+    <div class="explain-box">
+      <h4>How does it work?</h4>
+      <p>Gel electrophoresis separates <b>DNA, RNA or proteins</b> by size using an electric field.</p>
+      <p style="margin-top:5px"><b>Small fragments</b> travel <b>farther</b>. <b>Large fragments</b> stay <b>near the top</b>.</p>
+      <p style="margin-top:5px">A <b>DNA Ladder</b> with known sizes is used as reference.</p>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-head">&#127891; Quiz</div>
+    <div class="quiz-box">
+      <h4>Test Yourself</h4>
+      <div class="q-item">
+        <div class="q-label">1. Which fragments travel farthest?</div>
+        <label class="q-opt"><input type="radio" name="q1" value="s">Smaller fragments</label>
+        <label class="q-opt"><input type="radio" name="q1" value="l">Larger fragments</label>
+        <label class="q-opt"><input type="radio" name="q1" value="e">All travel equally</label>
+      </div>
+      <div class="q-item">
+        <div class="q-label">2. What is the DNA Ladder for?</div>
+        <label class="q-opt"><input type="radio" name="q2" value="c">Adding color</label>
+        <label class="q-opt"><input type="radio" name="q2" value="r">Size reference</label>
+        <label class="q-opt"><input type="radio" name="q2" value="p">Providing power</label>
+      </div>
+      <div class="q-item">
+        <div class="q-label">3. Why use gel as medium?</div>
+        <label class="q-opt"><input type="radio" name="q3" value="f">Pores filter by size</label>
+        <label class="q-opt"><input type="radio" name="q3" value="x">Speeds molecules up</label>
+        <label class="q-opt"><input type="radio" name="q3" value="y">Adds charge to DNA</label>
+      </div>
+      <button class="btn-green-s btn-sm" id="btnQuiz" style="width:100%;margin-top:6px">&#10003; Check Answers</button>
+      <div id="quizRes" class="quiz-res hidden"></div>
+    </div>
+  </div>
+</div>
+</div>
+<div class="modal-bg" id="reportModal">
+  <div class="modal">
+    <h3>&#128196; Lab Report</h3>
+    <pre id="reportTxt"></pre>
+    <div class="modal-btns">
+      <button class="btn-green-s" id="btnDL">&#11015; Download .txt</button>
+      <button class="btn-outline-s" id="btnCloseModal">Close</button>
+    </div>
+  </div>
+</div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const SAMPLES = [
+  { id:'ladder', name:'DNA Ladder', type:'dna', color:'#607d8b',
+    fragments:[100,250,500,750,1000,1500,2000,3000,5000,10000], desc:'Standard reference' },
+  { id:'a', name:'Sample A', type:'dna', color:'#1976d2',
+    fragments:[300,800,2500], desc:'3 DNA fragments' },
+  { id:'b', name:'Sample B', type:'dna', color:'#c62828',
+    fragments:[200,600,1500,4000], desc:'4 DNA fragments' },
+  { id:'c', name:'Sample C', type:'dna', color:'#e65100',
+    fragments:[150,450,1200], desc:'3 DNA fragments' },
+  { id:'p1', name:'Protein Mix', type:'protein', color:'#6a1b9a',
+    fragments:[15,35,70,120], desc:'4 protein bands (kDa)' },
+];
+const NW = 6;
+
+const S = {
+  wells: Array(NW).fill(null), sel: null, wi: 0,
+  running: false, progress: 0, speed: 4, uv: false, step: 0,
+  bandMeshes: [], bandData: []
+};
+
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+function renderSamples() {
+  const el = $('#sampleList'); el.innerHTML = '';
+  SAMPLES.forEach(s => {
+    const d = document.createElement('div');
+    d.className = 'sample' + (S.sel === s.id ? ' sel' : '');
+    d.style.setProperty('--scolor', s.color);
+    const u = s.type === 'dna' ? 'bp' : 'kDa';
+    d.innerHTML = `<div class="s-name"><div class="s-dot" style="background:${s.color}"></div>${s.name}</div>
+      <div class="s-meta">${s.desc} &middot; ${s.type.toUpperCase()}</div>
+      <div class="s-tags">${s.fragments.map(f => `<span class="s-tag">${f} ${u}</span>`).join('')}</div>`;
+    d.onclick = () => { S.sel = s.id; renderSamples(); setStep(0); };
+    el.appendChild(d);
+  });
+}
+function renderWells() {
+  const el = $('#wellBar'); el.innerHTML = '';
+  for (let i = 0; i < NW; i++) {
+    const d = document.createElement('div');
+    d.className = 'well' + (S.wells[i] ? ' filled' : '') + (S.wi === i ? ' act' : '');
+    d.textContent = i + 1;
+    d.onclick = () => { S.wi = i; renderWells(); };
+    el.appendChild(d);
+  }
+}
+function setStep(min) {
+  if (min > S.step) S.step = min;
+  $$('#stepList .step').forEach((el, i) => {
+    el.classList.remove('active', 'done');
+    if (i < S.step) el.classList.add('done');
+    else if (i === S.step) el.classList.add('active');
+  });
+}
+
+$('#btnLoad').onclick = () => {
+  if (!S.sel) return;
+  S.wells[S.wi] = S.sel;
+  renderWells(); updateWellColors(); setStep(1);
+  if (S.wi < NW - 1) { S.wi++; renderWells(); }
+};
+$('#btnClear').onclick = () => {
+  S.wells[S.wi] = null; renderWells(); updateWellColors(); clearBands();
+};
+$('#speedSlider').oninput = e => { S.speed = +e.target.value; $('#speedVal').textContent = S.speed + 'x'; };
+
+/* === RUN === */
+$('#btnRun').onclick = () => {
+  if (S.running) return;
+  if (!S.wells.some(w => w)) return;
+  S.running = true; S.progress = 0; clearBands();
+  $('#statusDot').classList.add('on'); $('#statusText').textContent = 'Running...';
+  $('#vpBadge').classList.add('running');
+  $('#vVolt').textContent = '120 V'; $('#vCurr').textContent = '35 mA';
+  ['cardVolt','cardCurr','cardTime','cardProg'].forEach(id => $(('#'+id)).classList.add('active'));
+  psScreenMat.emissive.setHex(0x00ff00); psScreenMat.emissiveIntensity = 0.8;
+  psLed.material.emissive.setHex(0x00ff00); psLed.material.emissiveIntensity = 1;
+  setStep(2);
+};
+$('#btnStop').onclick = () => {
+  S.running = false;
+  $('#statusDot').classList.remove('on'); $('#statusText').textContent = 'Stopped';
+  $('#vpBadge').classList.remove('running');
+  ['cardVolt','cardCurr','cardTime','cardProg'].forEach(id => $(('#'+id)).classList.remove('active'));
+  psScreenMat.emissive.setHex(0x330000); psScreenMat.emissiveIntensity = 0.2;
+  psLed.material.emissive.setHex(0x330000); psLed.material.emissiveIntensity = 0.2;
+};
+$('#btnReset').onclick = () => {
+  S.running = false; S.progress = 0; clearBands();
+  $('#statusDot').classList.remove('on'); $('#statusText').textContent = 'Ready';
+  $('#vpBadge').classList.remove('running');
+  $('#vVolt').textContent = '0 V'; $('#vCurr').textContent = '0 mA';
+  $('#vTime').textContent = '0:00'; $('#vProg').textContent = '0%';
+  $('#progBar').style.width = '0%'; $('#bandSec').style.display = 'none';
+  ['cardVolt','cardCurr','cardTime','cardProg'].forEach(id => $(('#'+id)).classList.remove('active'));
+  psScreenMat.emissive.setHex(0x002200); psScreenMat.emissiveIntensity = 0.1;
+  psLed.material.emissive.setHex(0x222222); psLed.material.emissiveIntensity = 0;
+  bufferMat.color.setHex(0x64b5f6); bufferMat.opacity = 0.3;
+  gelMat.color.setHex(0xc8daf0); gelMat.opacity = 0.12;
+  currentLight1.intensity = 0; currentLight2.intensity = 0;
+  removeBubbles();
+};
+$('#btnUV').onclick = () => {
+  S.uv = !S.uv;
+  $('#btnUV').classList.toggle('active', S.uv);
+  $('#btnUV').innerHTML = S.uv ? '&#128995; UV ON' : '&#128308; UV Light';
+  uvLight.intensity = S.uv ? 4 : 0;
+  gelMat.color.setHex(S.uv ? 0x1a0040 : 0xc8daf0);
+  gelMat.opacity = S.uv ? 0.55 : 0.12;
+  bufferMat.opacity = S.uv ? 0.12 : 0.3;
+  scene.background.setHex(S.uv ? 0x080018 : 0xdde4ec);
+  ambLight.intensity = S.uv ? 0.12 : 0.7;
+  dirLight.intensity = S.uv ? 0.25 : 1;
+  updateBandColors();
+  if (S.uv) setStep(3);
+};
+
+/* Quiz */
+$('#btnQuiz').onclick = () => {
+  const a1 = document.querySelector('input[name=q1]:checked');
+  const a2 = document.querySelector('input[name=q2]:checked');
+  const a3 = document.querySelector('input[name=q3]:checked');
+  if (!a1 || !a2 || !a3) return;
+  let sc = 0;
+  if (a1.value === 's') sc++;
+  if (a2.value === 'r') sc++;
+  if (a3.value === 'f') sc++;
+  const el = $('#quizRes'); el.classList.remove('hidden', 'good', 'ok', 'bad');
+  el.textContent = `Score: ${sc}/3 ${sc === 3 ? '— Perfect!' : sc === 2 ? '— Good job!' : '— Keep learning!'}`;
+  el.classList.add(sc === 3 ? 'good' : sc === 2 ? 'ok' : 'bad');
+};
+
+/* Report */
+$('#btnReport').onclick = () => {
+  let r = '══════════════════════════════════════════\n';
+  r += '     GEL ELECTROPHORESIS LAB REPORT\n';
+  r += '══════════════════════════════════════════\n\n';
+  r += `Date: ${new Date().toLocaleDateString()}\nTime: ${new Date().toLocaleTimeString()}\n\n`;
+  r += '── Samples Loaded ─────────────────────\n\n';
+  for (let i = 0; i < NW; i++) {
+    if (!S.wells[i]) continue;
+    const s = SAMPLES.find(x => x.id === S.wells[i]); if (!s) continue;
+    const u = s.type === 'dna' ? 'bp' : 'kDa';
+    r += `  Well ${i+1}: ${s.name} (${s.type.toUpperCase()})\n    Fragments: ${s.fragments.map(f=>f+' '+u).join(', ')}\n\n`;
+  }
+  r += '── Band Positions ─────────────────────\n\n';
+  S.bandData.forEach(b => {
+    r += `  Well ${b.well+1} | ${b.frag} ${b.type==='dna'?'bp':'kDa'} | Migration: ${(b.dist*100).toFixed(1)}%\n`;
+  });
+  r += `\n── Parameters ─────────────────────────\n\n  Voltage: 120V | Current: 35mA | Gel: 1% Agarose\n  Progress: ${(S.progress*100).toFixed(0)}%\n\n`;
+  r += '══════════════════════════════════════════\n  Generated by Gel Electrophoresis Sim\n';
+  $('#reportTxt').textContent = r; $('#reportModal').classList.add('show');
+};
+$('#btnCloseModal').onclick = () => $('#reportModal').classList.remove('show');
+$('#btnDL').onclick = () => {
+  const blob = new Blob([$('#reportTxt').textContent],{type:'text/plain'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'electrophoresis_report.txt'; a.click(); URL.revokeObjectURL(a.href);
+};
+
+/* ═══════════════════════════════════════════
+   THREE.JS SCENE
+   ═══════════════════════════════════════════ */
+const canvas = $('#three-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.4;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xdde4ec);
+
+const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+camera.position.set(0.5, 6.5, 5.5);
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.target.set(0, 0.4, 0);
+controls.minDistance = 3; controls.maxDistance = 14;
+controls.maxPolarAngle = Math.PI / 2.05;
+
+/* Lights */
+const ambLight = new THREE.AmbientLight(0xb0c4de, 0.7); scene.add(ambLight);
+const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+dirLight.position.set(5, 8, 4); dirLight.castShadow = true;
+dirLight.shadow.mapSize.set(1024, 1024);
+dirLight.shadow.camera.left = -4; dirLight.shadow.camera.right = 4;
+dirLight.shadow.camera.top = 4; dirLight.shadow.camera.bottom = -4;
+scene.add(dirLight);
+scene.add(new THREE.DirectionalLight(0x88aacc, 0.4).translateX(-3).translateY(4).translateZ(-2));
+const uvLight = new THREE.PointLight(0x7c4dff, 0, 8); uvLight.position.set(0, 3, 0); scene.add(uvLight);
+
+/* Current glow lights — appear when running */
+const currentLight1 = new THREE.PointLight(0x4488ff, 0, 3);
+currentLight1.position.set(0, 0.5, -0.9); scene.add(currentLight1);
+const currentLight2 = new THREE.PointLight(0xff4444, 0, 3);
+currentLight2.position.set(0, 0.5, 0.9); scene.add(currentLight2);
+
+/* Table */
+const tableTop = new THREE.Mesh(new THREE.BoxGeometry(8, 0.12, 5),
+  new THREE.MeshStandardMaterial({ color: 0x8d9aad, roughness: 0.6, metalness: 0.15 }));
+tableTop.position.y = -0.06; tableTop.receiveShadow = true; scene.add(tableTop);
+
+/* Tank */
+const tankW = 3.6, tankD = 2.2, tankH = 0.7, wallT = 0.06;
+const tankMat = new THREE.MeshPhysicalMaterial({
+  color: 0xc8d6e0, transparent: true, opacity: 0.3, roughness: 0.05,
+  metalness: 0, transmission: 0.5, thickness: 0.3, clearcoat: 1
+});
+const tankFloor = new THREE.Mesh(new THREE.BoxGeometry(tankW, wallT, tankD),
+  new THREE.MeshStandardMaterial({ color: 0xb0bec5, roughness: 0.4 }));
+tankFloor.position.y = wallT/2; tankFloor.receiveShadow = true; scene.add(tankFloor);
+[
+  {s:[tankW,tankH,wallT],p:[0,tankH/2+wallT, tankD/2]},
+  {s:[tankW,tankH,wallT],p:[0,tankH/2+wallT,-tankD/2]},
+  {s:[wallT,tankH,tankD],p:[ tankW/2,tankH/2+wallT,0]},
+  {s:[wallT,tankH,tankD],p:[-tankW/2,tankH/2+wallT,0]},
+].forEach(w=>{const m=new THREE.Mesh(new THREE.BoxGeometry(...w.s),tankMat);m.position.set(...w.p);m.castShadow=true;scene.add(m)});
+
+/* Buffer */
+const bufferMat = new THREE.MeshPhysicalMaterial({
+  color: 0x64b5f6, transparent: true, opacity: 0.3, roughness: 0.05,
+  metalness: 0, transmission: 0.6
+});
+const bufferMesh = new THREE.Mesh(new THREE.BoxGeometry(tankW-wallT*2, 0.35, tankD-wallT*2), bufferMat);
+bufferMesh.position.y = 0.24; scene.add(bufferMesh);
+
+/* Gel */
+const gelW = 2.6, gelD = 1.5, gelH2 = 0.08;
+const gelMat = new THREE.MeshPhysicalMaterial({
+  color: 0xc8daf0, transparent: true, opacity: 0.12, roughness: 0.15,
+  metalness: 0, transmission: 0.3, clearcoat: 0.4
+});
+const gelMesh = new THREE.Mesh(new THREE.BoxGeometry(gelW, gelH2, gelD), gelMat);
+gelMesh.position.set(0, 0.14, 0); scene.add(gelMesh);
+
+/* Wells */
+const wellGap = gelW / NW;
+const wellMeshes = [];
+for (let i = 0; i < NW; i++) {
+  const wm = new THREE.MeshStandardMaterial({ color: 0x90a4ae, roughness: 0.3 });
+  const w = new THREE.Mesh(new THREE.BoxGeometry(wellGap * 0.5, 0.04, 0.1), wm);
+  w.position.set(-gelW/2 + wellGap/2 + i*wellGap, 0.2, -gelD/2 + 0.18);
+  scene.add(w); wellMeshes.push(w);
+}
+
+/* Sample liquid in wells (visible colored blobs) */
+const wellLiquids = [];
+for (let i = 0; i < NW; i++) {
+  const lm = new THREE.MeshStandardMaterial({ color: 0x000000, transparent: true, opacity: 0, roughness: 0.5, emissive: 0x000000, emissiveIntensity: 0.3 });
+  const liq = new THREE.Mesh(new THREE.BoxGeometry(wellGap * 0.45, 0.025, 0.08), lm);
+  liq.position.set(-gelW/2 + wellGap/2 + i*wellGap, 0.2, -gelD/2 + 0.18);
+  scene.add(liq); wellLiquids.push(liq);
+}
+
+/* Electrodes */
+function makeElectrode(z, color) {
+  const g = new THREE.Group();
+  const rodMat = new THREE.MeshStandardMaterial({ color, roughness: 0.2, metalness: 0.7 });
+  const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, tankW-0.2, 12), rodMat);
+  rod.rotation.z = Math.PI/2; rod.position.set(0, 0.45, z); rod.castShadow = true; g.add(rod);
+  // glow ring
+  const glowMat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0, transparent: true, opacity: 0.6 });
+  const glowRing = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.015, 8, 16), glowMat);
+  [-1,1].forEach(side => {
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.055, 12, 12),
+      new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0, roughness: 0.1, metalness: 0.8 }));
+    cap.position.set(side*(tankW/2-0.05), 0.45, z); g.add(cap);
+    const ring = glowRing.clone(); ring.material = glowMat.clone();
+    ring.position.set(side*(tankW/2-0.05), 0.45, z); ring.rotation.y = Math.PI/2; g.add(ring);
+  });
+  scene.add(g); return g;
+}
+const cathode = makeElectrode(-tankD/2+0.15, 0x222222);
+const anode = makeElectrode(tankD/2-0.15, 0xcc3333);
+
+/* Wires */
+function makeWire(pts, color) {
+  const curve = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(...p)));
+  const m = new THREE.Mesh(new THREE.TubeGeometry(curve, 30, 0.02, 8, false),
+    new THREE.MeshStandardMaterial({ color, roughness: 0.3 }));
+  m.castShadow = true; scene.add(m); return m;
+}
+
+/* Power Supply */
+const psBox = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.6, 0.6),
+  new THREE.MeshStandardMaterial({ color: 0xeceff1, roughness: 0.3, metalness: 0.2 }));
+psBox.position.set(2.8, 0.36, 0); psBox.castShadow = true; scene.add(psBox);
+
+const psScreenMat = new THREE.MeshStandardMaterial({ color: 0x1b5e20, emissive: 0x002200, emissiveIntensity: 0.1 });
+const psScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 0.22), psScreenMat);
+psScreen.position.set(2.8, 0.48, -0.301); psScreen.rotation.y = Math.PI; scene.add(psScreen);
+
+// LED indicator on PS
+const psLed = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 8),
+  new THREE.MeshStandardMaterial({ color: 0x444444, emissive: 0x222222, emissiveIntensity: 0 }));
+psLed.position.set(3.1, 0.56, -0.31); scene.add(psLed);
+
+[{x:2.55,c:0xdd3333},{x:2.72,c:0x333333},{x:2.88,c:0x33aa33},{x:3.05,c:0x333333}].forEach(k=>{
+  const knob = new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.035,0.04,12),
+    new THREE.MeshStandardMaterial({color:k.c,roughness:0.2,metalness:0.6}));
+  knob.position.set(k.x,0.55,-0.31);knob.rotation.x=Math.PI/2;scene.add(knob);
+});
+
+makeWire([[2.2,0.36,-0.1],[1.8,0.75,-0.35],[1.0,0.7,-0.6],[tankW/2-0.05,0.45,-tankD/2+0.15]], 0x222222);
+makeWire([[2.2,0.36,0.1],[1.8,0.75,0.35],[1.0,0.7,0.6],[tankW/2-0.05,0.45,tankD/2-0.15]], 0xcc3333);
+
+/* ═══ BUBBLES — appear at electrodes when running ═══ */
+const bubbleGroup = new THREE.Group(); scene.add(bubbleGroup);
+const bubbleMat = new THREE.MeshPhysicalMaterial({
+  color: 0xffffff, transparent: true, opacity: 0.5, roughness: 0, metalness: 0, transmission: 0.8
+});
+const bubbles = [];
+function spawnBubble(z, color) {
+  const size = 0.01 + Math.random() * 0.025;
+  const b = new THREE.Mesh(new THREE.SphereGeometry(size, 8, 8), bubbleMat.clone());
+  b.material.color.setHex(color);
+  b.position.set((Math.random()-0.5)*2, 0.4, z + (Math.random()-0.5)*0.1);
+  b.userData.vy = 0.003 + Math.random() * 0.005;
+  b.userData.vx = (Math.random()-0.5) * 0.002;
+  b.userData.life = 0;
+  b.userData.maxLife = 60 + Math.random() * 60;
+  bubbleGroup.add(b); bubbles.push(b);
+}
+function removeBubbles() {
+  bubbles.forEach(b => { bubbleGroup.remove(b); b.geometry.dispose(); b.material.dispose(); });
+  bubbles.length = 0;
+}
+
+/* ═══ ELECTRIC FIELD PARTICLES ═══ */
+const pCount = 180;
+const pGeo = new THREE.BufferGeometry();
+const pPos = new Float32Array(pCount * 3);
+const pSizes = new Float32Array(pCount);
+const pVel = [];
+for (let i = 0; i < pCount; i++) {
+  pPos[i*3] = (Math.random()-0.5)*gelW;
+  pPos[i*3+1] = 0.12 + Math.random()*0.06;
+  pPos[i*3+2] = (Math.random()-0.5)*gelD;
+  pSizes[i] = 0.02 + Math.random()*0.03;
+  pVel.push(0.004 + Math.random()*0.008);
+}
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+const pMat = new THREE.PointsMaterial({
+  color: 0x42a5f5, size: 0.03, transparent: true, opacity: 0,
+  blending: THREE.AdditiveBlending, depthWrite: false
+});
+scene.add(new THREE.Points(pGeo, pMat));
+
+/* ═══ CURRENT ARC / LIGHTNING lines between electrodes ═══ */
+const arcCount = 5;
+const arcLines = [];
+for (let i = 0; i < arcCount; i++) {
+  const pts = [];
+  const segments = 12;
+  for (let j = 0; j <= segments; j++) pts.push(new THREE.Vector3(0,0,0));
+  const geo = new THREE.BufferGeometry().setFromPoints(pts);
+  const mat = new THREE.LineBasicMaterial({ color: 0x66bbff, transparent: true, opacity: 0, linewidth: 1 });
+  const line = new THREE.Line(geo, mat);
+  scene.add(line); arcLines.push({ line, geo, segments });
+}
+
+/* ═══ BAND MESHES ═══ */
+function migDist(size, maxSize) {
+  const lMax = Math.log10(maxSize);
+  const lS = Math.log10(Math.max(size,1));
+  return Math.max(0.05, Math.min(0.95, 1 - lS/lMax));
+}
+function clearBands() {
+  S.bandMeshes.forEach(m => { scene.remove(m); if(m.glowMesh) scene.remove(m.glowMesh); m.geometry.dispose(); m.material.dispose(); });
+  S.bandMeshes = []; S.bandData = [];
+}
+function createBands() {
+  clearBands();
+  for (let i = 0; i < NW; i++) {
+    if (!S.wells[i]) continue;
+    const sample = SAMPLES.find(x => x.id === S.wells[i]); if (!sample) continue;
+    const maxSz = sample.type === 'dna' ? 10000 : 250;
+    const laneX = -gelW/2 + wellGap/2 + i*wellGap;
+    sample.fragments.forEach((frag, fi) => {
+      const dist = migDist(frag, maxSz);
+      const bandW2 = wellGap * 0.78;
+      const bandH = 0.065;
+      const bandD2 = 0.12;
+      const bandMat = new THREE.MeshPhysicalMaterial({
+        color: 0x0a1060, emissive: 0x1a237e, emissiveIntensity: 0.9,
+        transparent: true, opacity: 0.98, roughness: 0.08, clearcoat: 0.7
+      });
+      const bandMesh = new THREE.Mesh(new THREE.BoxGeometry(bandW2, bandH, bandD2), bandMat);
+      bandMesh.position.set(laneX, 0.22, -gelD/2 + 0.25);
+      bandMesh.userData = { well:i, fragIdx:fi, frag, dist, sampleName:sample.name, type:sample.type };
+
+      // glow mesh behind band for UV mode
+      const glowMat = new THREE.MeshBasicMaterial({ color: 0x00ff66, transparent: true, opacity: 0, side: THREE.DoubleSide });
+      const glowMesh = new THREE.Mesh(new THREE.PlaneGeometry(bandW2*1.4, bandD2*2.5), glowMat);
+      glowMesh.position.copy(bandMesh.position);
+      glowMesh.position.y -= 0.005;
+      glowMesh.rotation.x = -Math.PI/2;
+      scene.add(glowMesh);
+      bandMesh.glowMesh = glowMesh;
+      bandMesh.glowMat = glowMat;
+
+      scene.add(bandMesh);
+      S.bandMeshes.push(bandMesh);
+      S.bandData.push({ well:i, fragIdx:fi, frag, dist, sampleName:sample.name, type:sample.type, mesh:bandMesh });
+    });
+  }
+  updateBandColors();
+}
+function updateBandColors() {
+  S.bandMeshes.forEach(m => {
+    if (S.uv) {
+      m.material.color.setHex(m.userData.type === 'dna' ? 0x00ff66 : 0x6666ff);
+      m.material.emissive.setHex(m.userData.type === 'dna' ? 0x00ff66 : 0x4444ff);
+      m.material.emissiveIntensity = 0.8;
+      m.material.opacity = 0.95;
+      m.glowMat.opacity = 0.75;
+      m.glowMat.color.setHex(m.userData.type === 'dna' ? 0x00ff66 : 0x6666ff);
+    } else {
+      m.material.color.setHex(0x3355aa);
+      m.material.emissive.setHex(0x2244aa);
+      m.material.emissiveIntensity = 0.15;
+      m.material.opacity = 0.55;
+      m.glowMat.opacity = 0;
+    }
+  });
+}
+function updateWellColors() {
+  for (let i = 0; i < NW; i++) {
+    if (S.wells[i]) {
+      const s = SAMPLES.find(x => x.id === S.wells[i]);
+      const c = new THREE.Color(s ? s.color : '#1976d2');
+      wellMeshes[i].material.color.copy(c);
+      wellLiquids[i].material.color.copy(c);
+      wellLiquids[i].material.emissive.copy(c);
+      wellLiquids[i].material.opacity = 0.8;
+    } else {
+      wellMeshes[i].material.color.setHex(0x90a4ae);
+      wellLiquids[i].material.opacity = 0;
+    }
+  }
+}
+
+/* ═══ 2D GEL VIEW ═══ */
+function drawGel2D() {
+  const cv = document.getElementById('gel2d');
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+
+  ctx.fillStyle = S.uv ? '#05000f' : '#0d1b2a';
+  ctx.fillRect(0, 0, W, H);
+
+  const padL = 26, padR = 8, padT = 24, padB = 10;
+  const gW = W - padL - padR, gH = H - padT - padB;
+  const lW = gW / NW;
+
+  // Gel slab
+  ctx.fillStyle = S.uv ? '#08002a' : '#112233';
+  ctx.fillRect(padL, padT, gW, gH);
+  ctx.strokeStyle = S.uv ? '#440088' : '#1e3a5f';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(padL, padT, gW, gH);
+
+  // Lane dividers
+  ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+  ctx.lineWidth = 0.5;
+  for (let i = 1; i < NW; i++) {
+    ctx.beginPath();
+    ctx.moveTo(padL + i * lW, padT);
+    ctx.lineTo(padL + i * lW, padT + gH);
+    ctx.stroke();
+  }
+
+  // Wells + labels
+  for (let i = 0; i < NW; i++) {
+    const cx = padL + (i + 0.5) * lW;
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = 'bold 8px Inter,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('W' + (i + 1), cx, padT - 9);
+    const wx = padL + i * lW + lW * 0.18, wy = padT + 2, ww = lW * 0.64, wh = 7;
+    if (S.wells[i]) {
+      const samp = SAMPLES.find(x => x.id === S.wells[i]);
+      ctx.fillStyle = samp ? samp.color : '#88aacc';
+      ctx.fillRect(wx, wy, ww, wh);
+    } else {
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(wx, wy, ww, wh);
+    }
+  }
+
+  // Polarity labels
+  ctx.font = '7px Inter,sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ff7777aa';
+  ctx.fillText('— neg', 2, padT + 11);
+  ctx.fillStyle = '#7799ffaa';
+  ctx.fillText('+ pos', 2, padT + gH - 4);
+
+  // Bands
+  const startY = padT + 12, endY = padT + gH - 5, rangeY = endY - startY;
+  if (S.bandData.length > 0 && S.progress > 0) {
+    S.bandData.forEach(b => {
+      const lx = padL + b.well * lW;
+      const by = startY + b.dist * S.progress * rangeY;
+      const col = S.uv
+        ? (b.type === 'dna' ? '#00ff88' : '#9999ff')
+        : (b.type === 'dna' ? '#5599ff' : '#cc77ff');
+
+      // glow
+      if (S.uv) {
+        const g = ctx.createLinearGradient(lx, by - 5, lx, by + 5);
+        g.addColorStop(0, 'transparent');
+        g.addColorStop(0.5, col + 'bb');
+        g.addColorStop(1, 'transparent');
+        ctx.fillStyle = g;
+        ctx.fillRect(lx + 1, by - 7, lW - 2, 14);
+      }
+
+      // band
+      ctx.fillStyle = col;
+      ctx.globalAlpha = 0.92;
+      ctx.fillRect(lx + lW * 0.07, by - 2, lW * 0.86, 4);
+      ctx.globalAlpha = 1;
+
+      // size label
+      ctx.fillStyle = col;
+      ctx.font = '6.5px Inter,sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(b.frag + (b.type === 'dna' ? '' : 'k'), lx + lW * 0.08, by - 4);
+    });
+  } else {
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.font = '9px Inter,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(S.wells.some(w => w) ? '▶ Run Gel to see bands' : 'Load a sample first', W / 2, H / 2);
+  }
+}
+
+/* Raycaster */
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+canvas.addEventListener('click', e => {
+  const rect = canvas.getBoundingClientRect();
+  mouse.x = ((e.clientX-rect.left)/rect.width)*2-1;
+  mouse.y = -((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(S.bandMeshes);
+  if (hits.length > 0) {
+    const ud = hits[0].object.userData;
+    const u = ud.type==='dna'?'bp':'kDa';
+    $('#tipBody').innerHTML = `
+      <div class="band-row"><span class="bl">Sample</span><span class="bv">${ud.sampleName}</span></div>
+      <div class="band-row"><span class="bl">Size</span><span class="bv">${ud.frag} ${u}</span></div>
+      <div class="band-row"><span class="bl">Migration</span><span class="bv">${(ud.dist*100).toFixed(1)}%</span></div>`;
+    const tip = $('#bandTip');
+    tip.style.left = Math.min(e.clientX-$('#viewport').getBoundingClientRect().left+15, canvas.clientWidth-170)+'px';
+    tip.style.top = (e.clientY-$('#viewport').getBoundingClientRect().top-40)+'px';
+    tip.classList.add('show');
+    $('#bandCard').innerHTML = `
+      <h4>&#128300; ${ud.sampleName} — Band ${ud.fragIdx+1}</h4>
+      <div class="band-row"><span class="bl">Fragment Size</span><span class="bv">${ud.frag} ${u}</span></div>
+      <div class="band-row"><span class="bl">Migration</span><span class="bv">${(ud.dist*100).toFixed(1)}%</span></div>
+      <div class="band-row"><span class="bl">Mobility</span><span class="bv">${ud.dist.toFixed(4)}</span></div>
+      <div class="band-row"><span class="bl">Well</span><span class="bv">#${ud.well+1}</span></div>
+      <div class="band-row"><span class="bl">Type</span><span class="bv">${ud.type.toUpperCase()}</span></div>`;
+    $('#bandSec').style.display = 'block';
+    setStep(4);
+    // flash the band
+    const origE = hits[0].object.material.emissiveIntensity;
+    hits[0].object.material.emissiveIntensity = 2;
+    setTimeout(()=>{ hits[0].object.material.emissiveIntensity = origE; }, 400);
+    setTimeout(()=>tip.classList.remove('show'), 3000);
+  } else {
+    $('#bandTip').classList.remove('show');
+  }
+});
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  mouse.x = ((e.clientX-rect.left)/rect.width)*2-1;
+  mouse.y = -((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(mouse, camera);
+  canvas.style.cursor = raycaster.intersectObjects(S.bandMeshes).length > 0 ? 'pointer' : 'grab';
+});
+
+/* Resize */
+function resize() {
+  const vp = $('#viewport');
+  renderer.setSize(vp.clientWidth, vp.clientHeight);
+  camera.aspect = vp.clientWidth / vp.clientHeight;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+
+/* ═══════════════════════════════════════════
+   ANIMATION LOOP — The main visual feedback
+   ═══════════════════════════════════════════ */
+let bandsCreated = false;
+let bubbleTimer = 0;
+
+function animate(t) {
+  requestAnimationFrame(animate);
+  const ts = (t||0) * 0.001;
+  const isRun = S.running;
+
+  /* === Progress === */
+  if (isRun && S.progress < 1) {
+    S.progress = Math.min(1, S.progress + 0.016 * 0.025 * S.speed);
+    const sec = Math.floor(S.progress * 200);
+    $('#vTime').textContent = Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
+    $('#vProg').textContent = (S.progress*100).toFixed(0)+'%';
+    $('#progBar').style.width = (S.progress*100)+'%';
+    if (!bandsCreated) { createBands(); bandsCreated = true; }
+    if (S.progress >= 1) {
+      S.running = false;
+      $('#statusDot').classList.remove('on'); $('#statusText').textContent = 'Complete ✓';
+      $('#vpBadge').classList.remove('running');
+      psScreenMat.emissive.setHex(0x004400); psScreenMat.emissiveIntensity = 0.3;
+      psLed.material.emissive.setHex(0x44ff44); psLed.material.emissiveIntensity = 0.5;
+      ['cardVolt','cardCurr','cardTime','cardProg'].forEach(id => $(('#'+id)).classList.remove('active'));
+    }
+  }
+
+  /* === BAND MOVEMENT (smooth, visible) === */
+  const startZ = -gelD/2 + 0.25;
+  const endZ = gelD/2 - 0.15;
+  const range = endZ - startZ;
+  S.bandMeshes.forEach(m => {
+    const targetZ = startZ + m.userData.dist * S.progress * range;
+    m.position.z += (targetZ - m.position.z) * 0.08;
+    if (m.glowMesh) {
+      m.glowMesh.position.x = m.position.x;
+      m.glowMesh.position.z = m.position.z;
+    }
+  });
+
+  /* === WELL LIQUID DRAIN animation — liquid level drops as bands migrate === */
+  for (let i = 0; i < NW; i++) {
+    if (S.wells[i] && S.progress > 0) {
+      const drain = Math.min(S.progress * 3, 1); // drains fast at start
+      wellLiquids[i].material.opacity = 0.8 * (1 - drain);
+      wellLiquids[i].scale.y = Math.max(0.1, 1 - drain);
+    }
+  }
+
+  /* === BUFFER COLOR SHIFT when running === */
+  if (isRun) {
+    const pulse = Math.sin(ts * 3) * 0.05;
+    bufferMat.color.setRGB(0.39 + pulse, 0.71, 0.96);
+    bufferMat.opacity = 0.32 + Math.sin(ts * 2) * 0.04;
+  }
+
+  /* === ELECTRODE GLOW — strong visible pulsing === */
+  const elecGlow = isRun ? 0.6 + Math.sin(ts * 6) * 0.35 : 0;
+  [cathode, anode].forEach(g => {
+    g.children.forEach(c => {
+      if (c.material && c.material.emissiveIntensity !== undefined) {
+        c.material.emissiveIntensity = elecGlow;
+      }
+    });
+  });
+
+  /* === CURRENT LIGHTS — glow at electrodes === */
+  currentLight1.intensity = isRun ? 1.5 + Math.sin(ts * 8) * 0.8 : Math.max(0, currentLight1.intensity - 0.05);
+  currentLight2.intensity = isRun ? 1.2 + Math.sin(ts * 7) * 0.6 : Math.max(0, currentLight2.intensity - 0.05);
+
+  /* === PS SCREEN FLICKER === */
+  if (isRun) {
+    psScreenMat.emissiveIntensity = 0.6 + Math.sin(ts * 10) * 0.15;
+    psLed.material.emissiveIntensity = 0.7 + Math.sin(ts * 4) * 0.3;
+  }
+
+  /* === BUBBLES at electrodes (electrolysis!) === */
+  if (isRun) {
+    bubbleTimer++;
+    if (bubbleTimer % Math.max(1, 4 - Math.floor(S.speed/3)) === 0) {
+      spawnBubble(-tankD/2+0.15, 0xaaccff); // cathode bubbles (hydrogen)
+      spawnBubble(tankD/2-0.15, 0xffaaaa);  // anode bubbles (oxygen)
+    }
+  }
+  // animate bubbles
+  for (let i = bubbles.length-1; i >= 0; i--) {
+    const b = bubbles[i];
+    b.position.y += b.userData.vy;
+    b.position.x += b.userData.vx + Math.sin(ts*10+i)*0.0005;
+    b.userData.life++;
+    const fade = 1 - b.userData.life / b.userData.maxLife;
+    b.material.opacity = 0.5 * fade;
+    b.scale.setScalar(1 + (1-fade)*0.5);
+    if (b.userData.life >= b.userData.maxLife || b.position.y > 1) {
+      bubbleGroup.remove(b); b.geometry.dispose(); b.material.dispose();
+      bubbles.splice(i, 1);
+    }
+  }
+
+  /* === ELECTRIC FIELD PARTICLES — strong visible flow === */
+  if (isRun) {
+    pMat.opacity = 0.5 + Math.sin(ts * 5) * 0.2;
+    pMat.size = 0.03 + Math.sin(ts * 3) * 0.01;
+    const pos = pGeo.attributes.position;
+    for (let i = 0; i < pCount; i++) {
+      pos.array[i*3+2] += pVel[i] * S.speed * 0.7;
+      // wiggle x
+      pos.array[i*3] += Math.sin(ts*5+i*0.7) * 0.001;
+      if (pos.array[i*3+2] > gelD/2) {
+        pos.array[i*3+2] = -gelD/2;
+        pos.array[i*3] = (Math.random()-0.5)*gelW;
+        pos.array[i*3+1] = 0.12 + Math.random()*0.06;
+      }
+    }
+    pos.needsUpdate = true;
+  } else {
+    pMat.opacity = Math.max(0, pMat.opacity - 0.015);
+  }
+
+  /* === ARC / CURRENT FLOW LINES === */
+  arcLines.forEach((a, ai) => {
+    const { line, geo, segments } = a;
+    if (isRun) {
+      line.material.opacity = 0.15 + Math.sin(ts*8+ai*2)*0.1;
+      const posArr = geo.attributes.position.array;
+      for (let j = 0; j <= segments; j++) {
+        const t2 = j/segments;
+        posArr[j*3] = (Math.random()-0.5)*gelW*0.8; // x
+        posArr[j*3+1] = 0.14 + Math.sin(ts*10+j+ai)*0.02; // y
+        posArr[j*3+2] = -gelD/2+0.15 + t2*(gelD-0.3); // z from cathode to anode
+      }
+      geo.attributes.position.needsUpdate = true;
+    } else {
+      line.material.opacity = Math.max(0, line.material.opacity - 0.02);
+    }
+  });
+
+  /* === GEL subtle animation when running === */
+  if (isRun) {
+    gelMesh.position.y = 0.14 + Math.sin(ts * 2) * 0.002; // tiny vibration
+  }
+
+  if (!S.running && S.progress === 0) bandsCreated = false;
+
+  drawGel2D();
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+/* ═══ INIT ═══ */
+resize();
+renderSamples();
+renderWells();
+updateWellColors();
+requestAnimationFrame(animate);
+</script>
+
+<!-- ====== THEORY SECTION ====== -->
+<div class="theory-section">
+
+  <h2>What is Gel Electrophoresis?</h2>
+  <p>Gel electrophoresis is a fundamental laboratory technique used to separate DNA, RNA, or protein molecules based on their size and electrical charge. When an electric field is applied across a gel matrix — typically agarose for nucleic acids or polyacrylamide for proteins — the negatively charged molecules migrate through the gel toward the positive electrode (anode). Smaller fragments travel faster and move farther through the porous gel matrix, while larger fragments are impeded and remain closer to the wells where the sample was loaded.</p>
+
+  <p>This technique is indispensable in modern molecular biology, genetics, forensic science, and clinical diagnostics. It enables scientists to visualize, compare, and analyze nucleic acid and protein samples with high resolution. The separated fragments appear as distinct bands that can be stained with fluorescent dyes such as ethidium bromide or SYBR Green and visualized under UV light.</p>
+
+  <div class="formula-box">log(MW) &prop; &minus;(migration distance)</div>
+
+  <div class="highlight-box">
+    The above relationship, derived from the <strong>Ferguson equation</strong>, states that the logarithm of the molecular weight (size) of a DNA fragment is linearly proportional to its migration distance through the gel. This is the basis for using a DNA ladder — a set of fragments of known sizes — to estimate the size of unknown fragments.
+  </div>
+
+  <h3>Principle of Gel Electrophoresis</h3>
+  <p>The principle of gel electrophoresis is based on two fundamental properties of molecules: their net electrical charge and their size. DNA and RNA molecules carry a uniform negative charge due to the phosphate groups in their backbone. When placed in an electric field, all nucleic acid molecules migrate in the same direction — toward the positive electrode — at a rate that depends primarily on their size and the gel concentration.</p>
+
+  <p>The gel acts as a molecular sieve. It is composed of a porous polymer network through which molecules must navigate. Smaller molecules pass through the pores with ease and move quickly, while larger molecules are physically obstructed and migrate more slowly. The result is a separation of molecules by size: a mixture of fragments loaded into a single well will spread out into discrete bands, each corresponding to a different size class.</p>
+
+  <h3>Components of Gel Electrophoresis</h3>
+  <div class="theory-columns">
+    <div class="theory-col">
+      <ul>
+        <li><strong>Agarose Gel:</strong> A porous matrix derived from seaweed polysaccharide. Gel concentration (typically 0.8%–2%) determines the pore size and the range of fragment sizes that can be resolved. Higher concentrations separate smaller fragments more effectively.</li>
+        <li><strong>Electrophoresis Tank:</strong> A buffer-filled horizontal chamber that holds the gel. Electrodes at each end connect to the power supply and establish the electric field across the gel.</li>
+        <li><strong>Buffer Solution (TAE or TBE):</strong> Maintains a stable pH, conducts electricity through the gel, and prevents DNA degradation. TAE (Tris-Acetate-EDTA) and TBE (Tris-Borate-EDTA) are the most commonly used buffers in nucleic acid electrophoresis.</li>
+        <li><strong>Power Supply:</strong> Provides constant DC voltage (50–150 V for DNA gels). Higher voltage increases migration speed but can cause band distortion and heat buildup.</li>
+      </ul>
+    </div>
+    <div class="theory-col">
+      <ul>
+        <li><strong>DNA Ladder (Marker):</strong> A mixture of DNA fragments of precisely known sizes, loaded alongside experimental samples. It provides a size reference against which unknown fragment sizes are estimated by comparing migration distances.</li>
+        <li><strong>Loading Dye:</strong> Mixed with samples before loading into wells. Contains a dense reagent (glycerol or sucrose) to make the sample sink into the well, and one or more tracking dyes (bromophenol blue, xylene cyanol) to allow visual monitoring of electrophoresis progress.</li>
+        <li><strong>Ethidium Bromide / SYBR Green:</strong> Fluorescent intercalating dyes that bind to DNA. Under UV illumination, DNA-bound dye fluoresces brightly, revealing the position of bands within the gel.</li>
+        <li><strong>UV Transilluminator:</strong> Emits ultraviolet light (typically 302 nm or 365 nm) to excite the fluorescent dye, making the DNA bands visible for photography and analysis.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Applications of Gel Electrophoresis</h3>
+  <p>Gel electrophoresis has an extraordinarily broad range of applications across biological and biomedical sciences. In <strong>molecular cloning</strong>, it is used to verify the sizes of PCR products and restriction digestion fragments. In <strong>forensic science and DNA fingerprinting</strong>, electrophoretic patterns of short tandem repeats (STRs) are used to identify individuals with near-certainty. In <strong>clinical diagnostics</strong>, it is used to detect genetic mutations, diagnose hereditary diseases, and identify pathogens.</p>
+
+  <p>In <strong>genomics and sequencing</strong>, gel electrophoresis has historically been used to read DNA sequences (Sanger sequencing). In <strong>proteomics</strong>, SDS-PAGE (sodium dodecyl sulphate polyacrylamide gel electrophoresis) separates proteins by molecular weight and is the basis for Western blotting. In <strong>RNA biology</strong>, gel electrophoresis is used to assess RNA integrity, verify transcript sizes, and analyze gene expression by Northern blotting. In <strong>environmental science</strong>, it is applied in microbial community profiling through techniques such as DGGE (denaturing gradient gel electrophoresis).</p>
+
+  <div class="highlight-box">
+    <strong>Key Takeaway:</strong> Gel electrophoresis is one of the most universally applied techniques in the life sciences. Its power lies in its simplicity — by exploiting the predictable relationship between molecular size and migration distance in a porous matrix under an electric field, it allows researchers to separate, visualize, and quantify nucleic acids and proteins from complex biological mixtures with precision and reproducibility.
+  </div>
+
+</div>
+
+</body>
+</html>
